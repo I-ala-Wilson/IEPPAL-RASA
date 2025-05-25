@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IEPPAL Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Add Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <!-- Search Bar -->
+  <div class="search-bar">
+    <button class="menu-btn"><i class="fas fa-bars"></i></button>
+    <i class="fas fa-search"></i>
+    <span>Search IEPPAL</span>
+    <div style="flex-grow: 1"></div>
+    <i class="fas fa-bell"></i>
+    <div class="profile-pic"></div>
+  </div>
+
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-item">
+        <i class="fas fa-home"></i>
+        <span class="sidebar-text">Home</span>
+      </div>
+      <!-- Repeat for other menu items -->
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="menu-row">
+        <div class="menu-card" style="width: 40%">
+          <h2>New Student Support</h2>
+          <p>What type of plan is this?</p>
+          <div class="plan-options">
+            <div class="plan-option">Individual Accommodation Plan (IAP)</div>
+            <!-- Add other options -->
+          </div>
+          <button class="add-btn"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <div class="menu-card" style="width: 40%">
+          <h2>Daily Planner</h2>
+          <!-- Calendar content -->
+        </div>
+      </div>
+
+      <div class="menu-card">
+        <h2>Data Dashboard</h2>
+        <!-- Chart placeholder -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

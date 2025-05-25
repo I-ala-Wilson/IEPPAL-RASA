@@ -3,43 +3,53 @@ import React, { createContext, useState } from "react";
 export const IEPContext = createContext();
 
 export function IEPProvider({ children }) {
-  // Store the ongoing IEP data from the multi‐step forms
+  // in-progress form data
   const [iepData, setIepData] = useState({
     studentInfo: {},
     needs: {},
     strengths: {},
-    goal: {}
+    goals: []
   });
 
-  // Store completed IEP reports
+  // completed reports
   const [iepReports, setIepReports] = useState([]);
 
-  const updateStudentInfo = (data) =>
-    setIepData((prev) => ({ ...prev, studentInfo: data }));
-  const updateNeeds = (data) =>
-    setIepData((prev) => ({ ...prev, needs: data }));
-  const updateStrengths = (data) =>
-    setIepData((prev) => ({ ...prev, strengths: data }));
-  const updateGoal = (data) =>
-    setIepData((prev) => ({ ...prev, goal: data }));
+  // section updaters
+  const updateStudentInfo = data =>
+    setIepData(prev => ({ ...prev, studentInfo: data }));
+  const updateNeeds = data =>
+    setIepData(prev => ({ ...prev, needs: data }));
+  const updateStrengths = data =>
+    setIepData(prev => ({ ...prev, strengths: data }));
 
+  // goal management
+  const addGoal = data =>
+    setIepData(prev => ({ ...prev, goals: [...prev.goals, data] }));
+  const updateGoal = (index, data) =>
+    setIepData(prev => {
+      const newGoals = [...prev.goals];
+      newGoals[index] = data;
+      return { ...prev, goals: newGoals };
+    });
+
+  // once the user hits “Finish”
   const finalizeReport = () => {
-    const report = { ...iepData };
-    setIepReports((prev) => [...prev, report]);
-    // Optionally reset iepData for a new report
-    setIepData({ studentInfo: {}, needs: {}, strengths: {}, goal: {} });
+    setIepReports(prev => [...prev, iepData]);
+    // reset for next IEP
+    setIepData({ studentInfo: {}, needs: {}, strengths: {}, goals: [] });
   };
 
   return (
     <IEPContext.Provider
       value={{
         iepData,
+        iepReports,
         updateStudentInfo,
         updateNeeds,
         updateStrengths,
+        addGoal,
         updateGoal,
         finalizeReport,
-        iepReports
       }}
     >
       {children}
