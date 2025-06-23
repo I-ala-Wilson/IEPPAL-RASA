@@ -12,9 +12,12 @@ import GoalForm from "./pages/GoalForm";
 import IEPReport from "./pages/IEPReport";
 import Classrooms from "./pages/Classrooms";
 import StrategyLibrary from "./pages/StrategyLibrary";
-import CommunityHub from "./pages/CommunityHub";
 import GoalEditor from "./pages/GoalEditor";
-import ResponsePrompt from "./pages/ResponsePrompt";    // ← Add this import
+import ResponsePrompt from "./pages/ResponsePrompt";
+import Calendar from "./pages/Calendar"; // Add Calendar import
+
+import StudentDashboard from "./pages/StudentDashboard";
+import GoalDetail from "./pages/GoalDetail"; // Updated import - using GoalDetail instead of StudentGoalForm
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -50,9 +53,15 @@ export default function App() {
         {/* Classrooms */}
         <Route path="/classrooms" element={<Classrooms />} />
 
+        {/* Calendar */}
+        <Route path="/calendar" element={<Calendar />} />
+
         {/* Other pages */}
         <Route path="/strategy-library" element={<StrategyLibrary />} />
-        <Route path="/community-hub" element={<CommunityHub />} />
+        
+        {/* Student Dashboard & Goal Detail */}
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/goal/:goalId" element={<GoalDetail />} />
 
         {/* Fallback */}
         <Route

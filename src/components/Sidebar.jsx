@@ -1,4 +1,4 @@
-// src/components/Sidebar.jsx
+// sidebar.jsx
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -16,8 +16,7 @@ const menuItems = [
   { name: "Classrooms", icon: <FiUsers className="w-6 h-6" />, path: "/classrooms" },
   { name: "Data Dashboard", icon: <FiBarChart2 className="w-6 h-6" />, path: "/iep-report" },
   { name: "Strategy Library", icon: <FiBookOpen className="w-6 h-6" />, path: "/strategy-library" },
-  { name: "Daily Planner", icon: <FiCalendar className="w-6 h-6" />, path: "/daily-planner" },
-  { name: "Community Hub", icon: <FiMessageCircle className="w-6 h-6" />, path: "/community-hub" },
+  { name: "Calendar", icon: <FiCalendar className="w-6 h-6" />, path: "/calendar" },
 ];
 
 export default function Sidebar() {
@@ -27,31 +26,36 @@ export default function Sidebar() {
     <aside
       onMouseEnter={() => setExtended(true)}
       onMouseLeave={() => setExtended(false)}
-      className={`transition-all duration-300 ${extended ? "w-56" : "w-16"} bg-gradient-to-b from-pink-500 to-orange-500 h-screen shadow-lg p-4`}
+      className={`transition-all duration-300 ${extended ? "w-56" : "w-16"} bg-gradient-to-b from-pink-500 to-orange-500 h-screen shadow-lg p-4 relative`}
     >
-      {/* Header with IEPPAL logo and text aligned with menu items */}
-      <div className="flex items-center mb-8">
-        <IeppalLogo className="w-10 h-10" />
-        {extended && (
-          <span className="ml-4 text-[40px] leading-none font-semibold text-white transition-opacity duration-300 whitespace-nowrap">
-            IEPPAL
-          </span>
-        )}
+      {/* Header with centered logo+text group */}
+      <div className="relative mb-8 h-10">
+        <div
+          className="absolute top-0 left-1/2 transform -translate-x-1/2 flex items-center transition-all duration-300"
+        >
+          <IeppalLogo className="w-10 h-10 flex-shrink-0" />
+          {extended && (
+            <span className="ml-4 text-[40px] leading-none font-semibold text-white transition-opacity duration-300 opacity-100 whitespace-nowrap">
+              IEPPAL
+            </span>
+          )}
+        </div>
       </div>
+
       <nav className="space-y-3">
         {menuItems.map((item) => (
           <NavLink
             key={item.name}
             to={item.path}
             className={({ isActive }) => {
-              const baseClasses = `flex items-center h-12 rounded-lg transition-colors ${
+              const base = `flex items-center h-12 rounded-lg transition-colors ${
                 extended ? "px-3 justify-start" : "justify-center"
               }`;
-              const activeClasses = isActive ? "bg-white/30" : "hover:bg-white/20";
-              return `${baseClasses} ${activeClasses}`;
+              const active = isActive ? "bg-white/30" : "hover:bg-white/20";
+              return `${base} ${active}`;
             }}
           >
-            {({ isActive }) => (
+            {() => (
               <>
                 <div className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-white">
                   {item.icon}
