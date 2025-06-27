@@ -20,6 +20,10 @@ const Navbar = ({ isVisible }) => (
   </div>
 );
 
+// Red Border Shit
+const today = new Date();
+
+
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -215,30 +219,31 @@ export default function Calendar() {
         <div className={`bg-white rounded-3xl shadow-2xl flex flex-col border border-gray-200 transition-all duration-1000 delay-400 ${
           isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         }`}>
-            {/* Calendar Header */}
-            <div className={`flex items-center justify-between p-8 border-b border-gray-200 transition-all duration-800 delay-500 ${
-              showHeader ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-            }`}>
-              <div className="flex items-center space-x-6">
-                <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </h2>
-                <div className="flex items-center space-x-2 bg-gray-100 rounded-2xl p-2">
-                  <button
-                    onClick={() => navigateMonth(-1)}
-                    className="p-3 rounded-xl hover:bg-gray-200 transition-all duration-300 group"
-                  >
-                    <ChevronLeft className="w-6 h-6 text-gray-600 group-hover:scale-110 transition-transform" />
-                  </button>
-                  <button
-                    onClick={() => navigateMonth(1)}
-                    className="p-3 rounded-xl hover:bg-gray-200 transition-all duration-300 group"
-                  >
-                    <ChevronRight className="w-6 h-6 text-gray-600 group-hover:scale-110 transition-transform" />
-                  </button>
-                </div>
-              </div>
-            </div>
+           {/* Calendar Header */}
+<div
+  className={`flex items-center justify-between p-8 border-b border-gray-200 transition-all duration-800 delay-500 ${
+    showHeader ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+  }`}
+>
+  <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+  </h2>
+  <div className="flex items-center space-x-2 bg-gray-100 rounded-2xl p-2">
+    <button
+      onClick={() => navigateMonth(-1)}
+      className="p-3 rounded-xl hover:bg-gray-200 transition-all duration-300 group"
+    >
+      <ChevronLeft className="w-6 h-6 text-gray-600 group-hover:scale-110 transition-transform" />
+    </button>
+    <button
+      onClick={() => navigateMonth(1)}
+      className="p-3 rounded-xl hover:bg-gray-200 transition-all duration-300 group"
+    >
+      <ChevronRight className="w-6 h-6 text-gray-600 group-hover:scale-110 transition-transform" />
+    </button>
+  </div>
+</div>
+
 
             {/* Calendar Grid Container */}
             <div className={`flex-1 p-8 flex flex-col min-h-0 transition-all duration-800 delay-700 ${
@@ -265,22 +270,35 @@ export default function Calendar() {
               {days.map((day, index) => {
   const row = Math.floor(index / 7);
   const col = index % 7;
+
+  const isToday =
+  day &&
+  today.getFullYear()  === currentDate.getFullYear() &&
+  today.getMonth()     === currentDate.getMonth()    &&
+  today.getDate()      === day;
+
+
   return (
     <div
       key={index}
-      className={`p-4 rounded-2xl border-2 transition-all duration-300 min-h-[120px] ${
+      className={`
+      p-4 rounded-2xl border-2 transition-all duration-1000 min-h-[120px] ${
         day
-          ? `${getPositionBasedBorderColor(row, col)} hover:border-opacity-80 cursor-pointer hover:shadow-xl ${getPositionBasedHover(row, col)} bg-white hover:bg-gray-50 hover:scale-105`
+          ? `${
+              getPositionBasedBorderColor(row, col)
+            } ${isToday ? 'ring-2 ring-red-500 ring-offset-2' : ''} hover:border-opacity-80 cursor-pointer hover:shadow-xl ${
+              getPositionBasedHover(row, col)
+            } bg-white hover:bg-gray-50 hover:scale-105`
           : 'border-transparent'
       } ${
         showDays ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
       }`}
       style={{
-        // Only delay initial entrance, then 0ms for hover/unhover
         transitionDelay: (!daysAnimationComplete && showDays)
           ? `${(row + col) * 100}ms`
           : '0ms'
       }}
+
       onClick={() => handleDateClick(day)}
     >
                       {day && (
