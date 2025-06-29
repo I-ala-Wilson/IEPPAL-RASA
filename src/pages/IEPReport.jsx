@@ -421,10 +421,10 @@ export default function IEPReport() {
             Export IEP to PDF
           </button>
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/classrooms")}
             className="px-6 py-2 bg-gray-600 text-white rounded-full hover:scale-105 transition-all duration-300"
           >
-            Return to Home Dashboard
+            Proceed to Classrooms
           </button>
         </div>
       </div>

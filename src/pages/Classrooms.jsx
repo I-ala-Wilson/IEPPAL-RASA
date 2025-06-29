@@ -1,13 +1,24 @@
 // src/pages/Classrooms.jsx
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calculator, Book, Brain, Clock, Plus, Edit3, Trash2, Users, Palette, Languages, Wrench, Music, Globe, BookType,} from "lucide-react";
+import { Calculator, Book, Brain, Clock, Plus, Edit3, Trash2, Users, Star, Palette, Languages, Wrench, Music, Globe, BookType,Target, X, BookOpen, Calendar, ClipboardList, Settings, Check, FileText, Edit2, PenTool, BarChart2, UserCheck, Headphones, MessageSquare, Lightbulb, } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { IEPContext } from "../context/IEPContext";
+import DatePicker from 'react-datepicker'
+import { parse, format } from 'date-fns'
+import 'react-datepicker/dist/react-datepicker.css'
 
-// Map of student IDs to their goals
-const goalsData = {
+
+
+
+export default function Classrooms() {
+  const navigate = useNavigate();
+  const { iepReports } = useContext(IEPContext);
+  const reports = iepReports || [];
+
+  // Map of student IDs to their goals (now in state so we can update it)
+const [goalsData, setGoalsData] = useState({
   1: [
     {
       id: 1,
@@ -66,12 +77,8 @@ const goalsData = {
       ]
     }
   ]
-};
+});
 
-export default function Classrooms() {
-  const navigate = useNavigate();
-  const { iepReports } = useContext(IEPContext);
-  const reports = iepReports || [];
 
   // Classroom modal state
   const [showClassroomPopup, setShowClassroomPopup] = useState(false);
@@ -82,6 +89,27 @@ export default function Classrooms() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showGoalDetail, setShowGoalDetail] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
+   // which field is currently being edited inline
+  const [editingGoalField, setEditingGoalField] = useState(null);
+
+  // when you click “Save Goal” in the footer
+  const handleSaveGoal = () => {
+    setGoalsData(prev => {
+      const sid = selectedGoal.studentId || selectedStudent.id;
+      const existing = prev[sid] || [];
+      const isEdit = existing.some(g => g.id === selectedGoal.id);
+  
+      const updated = isEdit
+        // update the matching goal
+        ? existing.map(g => g.id === selectedGoal.id ? selectedGoal : g)
+        // or append a brand‑new one
+        : [...existing, selectedGoal];
+  
+      return { ...prev, [sid]: updated };
+    });
+  
+    setShowGoalDetail(false);
+  };
 
     // ↓ new ↓
     const [textInputFocused, setTextInputFocused] = useState(false);
@@ -91,6 +119,43 @@ export default function Classrooms() {
   const [newStudentName,  setNewStudentName]  = useState("");
   const [newStudentGrade, setNewStudentGrade] = useState("");
 
+
+
+const [showNoIEPPrompt, setShowNoIEPPrompt] = useState(false);
+
+
+
+// IEP shit
+const handleIEPClick = (studentId) => {
+
+  // Check if student has an IEP (you'll need to implement this logic based on your data structure)
+  const studentHasIEP = checkIfStudentHasIEP(studentId);
+  
+  if (studentHasIEP) {
+    // Navigate to existing IEP
+    openStudentIEP(studentId);
+  } else {
+    // Show the prompt to create new IEP
+    setShowNoIEPPrompt(true);
+  }
+};
+
+const handleCreateIEP = () => {
+  setShowNoIEPPrompt(false);
+  // Navigate to the new student info page
+  navigate('/new-student/info', { 
+    state: { 
+      studentId: selectedStudent.id,
+      studentName: selectedStudent.studentName 
+    }
+  });
+};
+
+// You'll need to implement this function based on your data structure
+const checkIfStudentHasIEP = (studentId) => {
+  // Example logic - replace with your actual IEP checking logic
+  return selectedStudent.hasIEP || false;
+};
 
   // NEW: Add Class Modal State
   const [showAddClassModal, setShowAddClassModal] = useState(false);
@@ -146,6 +211,13 @@ export default function Classrooms() {
       setShowAddStudentModal(false);
     };
   
+
+    const handleColorChange = (colorValue) => {
+      setSelectedGoal(prev => ({
+        ...prev,
+        colorGradient: colorValue
+      }));
+    };
 
     // Available icon choices
     const iconOptions = [
@@ -368,9 +440,35 @@ const allRooms = [
 
   // Goal detail modal functions
   const openGoalDetail = (goal) => {
-    setSelectedGoal(goal);
+    setSelectedGoal({
+      ...goal,
+      // if goal.colorGradient isn’t set, fall back to goal.color
+      colorGradient: goal.colorGradient ?? goal.color
+    });
     setShowGoalDetail(true);
   };
+  
+// just below your other hooks:
+const [showDocModal, setShowDocModal] = useState(false)
+const [docUploaded, setDocUploaded]    = useState(false)
+const [isUploading, setIsUploading]    = useState(false)
+
+// copy into component:
+const handleDocUpload = e => {
+  const file = e.target.files[0]
+  if (file?.type === "application/pdf") {
+    setIsUploading(true)
+    setTimeout(() => {
+      setDocUploaded(true)
+      setIsUploading(false)
+      setShowDocModal(false)
+    }, 1500)
+  } else {
+    alert("Please select a PDF file.")
+  }
+}
+
+
 
   const closeGoalDetail = () => {
     setShowGoalDetail(false);
@@ -641,7 +739,7 @@ const allRooms = [
                   </button>
                     <button
     onClick={() => setShowAddStudentModal(true)}
-    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-400 text-white rounded-xl ..."
+    className="px-6 py-2 bg-gradient-to-r from-pink-500 to-orange-400 text-white rounded-xl ..."
   >
     Add Student
   </button>
@@ -759,11 +857,12 @@ const allRooms = [
                     {searchTerm ? 'Try adjusting your search terms.' : 'This classroom is empty.'}
                   </p>
                   <button
-    onClick={() => setShowAddStudentModal(true)}
-    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-400 ..."
-  >
-    Add First Student
-  </button>
+  onClick={() => setShowAddStudentModal(true)}
+  className="px-6 py-3 bg-gradient-to-r from-pink-500 to-orange-400 text-white rounded-lg"
+>
+  Add First Student
+</button>
+
 
                 </div>
               </div>
@@ -980,7 +1079,10 @@ const allRooms = [
           </div> 
         </div>
       )}
-            {/* STUDENT POPUP */}
+
+
+
+{/* STUDENT POPUP */}
             {showStudentPopup && selectedStudent && (
         <div className="fixed inset-0 bg-gray-50 z-50 overflow-auto">
           {/* Header Bar */}
@@ -1011,12 +1113,35 @@ const allRooms = [
                   </div>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <button className="px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all">
-                    Add New Goal
-                  </button>
-                  <button className="px-6 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors">
-                    View Progress
-                  </button>
+                {/* after */}
+<button
+  onClick={() => {
+    // build a fresh blank-goal only when clicked
+    const newGoal = {
+      id: Date.now(),
+      title: "",
+      class:
+        customClasses[selectedClassroom]?.name ||
+        `Classroom ${selectedClassroom}`,
+        startDate: null,
+      description: "",
+      strategies: [],
+      standards: [],
+      colorGradient: "from-pink-500 to-rose-400",
+      icon: Target,
+      studentId: selectedStudent.id,
+    };
+    setSelectedGoal(newGoal);
+    setShowGoalDetail(true);
+  }}
+  className="px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all"
+>
+  Add New Goal
+</button>
+
+
+
+
                 </div>
               </div>
             </div>
@@ -1026,96 +1151,210 @@ const allRooms = [
           <div className="max-w-7xl mx-auto px-8 py-8">
             {goalsData[selectedStudent.id] && goalsData[selectedStudent.id].length > 0 ? (
               <>
-                {/* Goals Overview */}
-                <div className="mb-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-800">Active Goals</h2>
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
-                      <span className="flex items-center">
-                        <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
-                        {goalsData[selectedStudent.id].length} Active Goals
-                      </span>
-                    </div>
+               {/* Goals Overview */}
+<div className="mb-8">
+  {/* Black title above IEP box */}
+  <h2 className="text-2xl font-bold text-gray-800 mb-4">{selectedStudent.studentName}'s IEP</h2>
+  
+  
+  
+  
+{/* STUDENT'S IEP */}
+<div     
+  className="w-full mb-6 p-8 bg-gradient-to-br from-pink-500 via-rose-400 to-pink-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] cursor-pointer transition-all duration-300 ease-out border border-white/10"     
+  onClick={() => handleIEPClick(selectedStudent.id)} 
+>     
+  <div className="flex items-center relative">    
+    {/* Subtle background pattern */}    
+    <div className="absolute inset-0 bg-white/5 rounded-2xl"></div>         
+    
+    {/* Icon on the left */}    
+    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mr-6 backdrop-blur-sm flex-shrink-0 relative z-10">      
+      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">        
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />      
+      </svg>    
+    </div>         
+    
+    {/* Text content */}    
+    <div className="flex-1 relative z-10">      
+      <h3 className="text-2xl font-bold mb-2 tracking-wide">        
+        {selectedStudent.studentName}'s IEP      
+      </h3>      
+      <p className="text-white/85 text-lg font-medium">        
+        {selectedStudent.hasIEP ? 'Click to view or edit IEP details' : 'Click to create an IEP'}      
+      </p>    
+    </div>  
+  </div>
+</div>
+
+{/* No IEP Modal/Alert */}
+{showNoIEPPrompt && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform transition-all duration-300">
+      <div className="text-center">
+        <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+        
+        <h3 className="text-xl font-bold text-gray-800 mb-2">No IEP Found</h3>
+        <p className="text-gray-600 mb-6">
+          {selectedStudent.studentName} doesn't have an IEP yet. Would you like to create one now?
+        </p>
+        
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setShowNoIEPPrompt(false)}
+            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleCreateIEP}
+            className="flex-1 px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-400 text-white rounded-lg hover:shadow-lg transition-all"
+          >
+            Create IEP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* ADD SUPPORTING DOCUMENT BANNER */}
+<div
+  className="w-full mb-8 p-8 bg-gradient-to-br from-pink-400 via-purple-400 to-purple-600 text-white rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] cursor-pointer transition-all duration-300 ease-out border border-white/10"
+  onClick={() => setShowDocModal(true)}
+>
+  <div className="flex items-center relative">
+    {/* faint background pattern */}
+    <div className="absolute inset-0 bg-white/10 rounded-2xl"></div>
+
+    {/* icon on the left */}
+    <div className="relative z-10 flex-shrink-0 w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mr-6">
+      {docUploaded ? (
+        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4"/>
+        </svg>
+      ) : (
+        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+      )}
+    </div>
+
+    {/* text content */}
+    <div className="relative z-10 flex-1">
+      <h3 className="text-2xl font-bold mb-2 tracking-wide">
+        {docUploaded ? "View Document" : "Add Supporting Document"}
+      </h3>
+      <p className="text-white/90 text-lg">
+        {docUploaded
+          ? "Your file has been successfully attached."
+          : "Upload assessment reports, evaluations, or other PDFs."}
+      </p>
+    </div>
+  </div>
+</div>
+
+
+  {/* Active Goals section - moved below IEP */}
+  <div className="flex items-center justify-between mb-6">
+    <h2 className="text-xl font-semibold text-gray-800">Active Goals</h2>
+    <div className="flex items-center space-x-4 text-sm text-gray-600">
+      <span className="flex items-center">
+        <div className="w-3 h-3 bg-green-400 rounded-full mr-2"></div>
+        {goalsData[selectedStudent.id].length} Active Goals
+      </span>
+    </div>
+  </div>
+
+  {/* Goals Grid */}
+
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  {goalsData[selectedStudent.id].map((goal) => {
+    const Icon = goal.icon;
+    return (
+      <div key={goal.id} className="group bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+        {/* Goal Header */}
+        <div className={`bg-gradient-to-r ${goal.colorGradient || goal.color} p-8 relative overflow-hidden`}>
+          {/* Preserved: Large faded icon in top right */}
+          <div className="absolute top-4 right-4 opacity-20 transform rotate-12">
+            <Icon className="w-16 h-16 text-white" />
+          </div>
+          
+          <div className="relative">
+            <div className="flex items-center mb-3">
+              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
+                <Icon className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="mb-2">
+              <span className="text-white text-lg font-semibold opacity-90">
+                {goal.class}
+              </span>
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{goal.title}</h3>
+            <p className="text-white text-opacity-90 text-sm">Started {goal.startDate}</p>
+          </div>
+        </div>
+
+        {/* Goal Content */}
+        <div className="p-8">
+          {/* Academic Standards */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">
+              Academic Standards
+            </h4>
+            <div className="space-y-3">
+              {goal.standards.map((standard, i) => (
+                <div key={i} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl">
+                  <div className={`w-6 h-6 bg-gradient-to-r ${goal.colorGradient || goal.color} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                    <span className="text-white text-xs font-bold">{i + 1}</span>
                   </div>
+                  <span className="text-gray-700 text-sm leading-relaxed">{standard}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-                  {/* Goals Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {goalsData[selectedStudent.id].map((goal) => {
-                      const Icon = goal.icon;
-                      return (
-                        <div key={goal.id} className="bg-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-                          {/* Goal Header */}
-                          <div className={`bg-gradient-to-r ${goal.color} p-8 relative overflow-hidden`}>
-                            <div className="absolute top-4 right-4 opacity-20">
-                              <Icon className="w-16 h-16 text-white" />
-                            </div>
-                            <div className="relative">
-                              <div className="flex items-center mb-3">
-                                <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-4">
-                                  <Icon className="w-6 h-6 text-white" />
-                                </div>
-                                <span className="px-3 py-1 bg-white bg-opacity-20 rounded-full text-white text-sm font-medium">
-                                  {goal.class}
-                                </span>
-                              </div>
-                              <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{goal.title}</h3>
-                              <p className="text-white text-opacity-90 text-sm">Started {goal.startDate}</p>
-                            </div>
-                          </div>
+          {/* Strategies */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">
+              Support Strategies
+            </h4>
+            <div className="flex flex-wrap gap-3">
+            {goal.strategies.map((strategy, idx) => {
+  // reuse the same gradient you used in the header
+  const gradient = goal.colorGradient || goal.color;
+  return (
+    <span
+      key={idx}
+      className={`px-4 py-2 rounded-xl bg-gradient-to-r ${gradient} text-white`}
+    >
+      {strategy}
+    </span>
+  );
+})}
 
-                          {/* Goal Content */}
-                          <div className="p-8">
-                            {/* Academic Standards */}
-                            <div className="mb-6">
-                              <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                                Academic Standards
-                              </h4>
-                              <div className="space-y-3">
-                                {goal.standards.map((standard, i) => (
-                                  <div key={i} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl">
-                                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                      <span className="text-blue-600 text-xs font-bold">{i + 1}</span>
-                                    </div>
-                                    <span className="text-gray-700 text-sm leading-relaxed">{standard}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
+            </div>
+          </div>
 
-                            {/* Strategies */}
-                            <div className="mb-6">
-                              <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                                Support Strategies
-                              </h4>
-                              <div className="flex flex-wrap gap-3">
-                                {goal.strategies.map((strategy, idx) => (
-                                  <span 
-                                    key={idx} 
-                                    className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium border border-emerald-100"
-                                  >
-                                    {strategy}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                              <button 
-                                onClick={() => openGoalDetail(goal)}
-                                className="px-4 py-2 bg-gray-50 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
-                              >
-                                View Details
-                              </button>
-                              <button className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
-                                Track Progress
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <button 
+              onClick={() => openGoalDetail(goal)}
+              className="px-4 py-2 bg-gray-50 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-100 hover:shadow-md transition-all duration-200"
+            >
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  })}
+</div>
                 </div>
               </>
             ) : (
@@ -1132,24 +1371,530 @@ const allRooms = [
                     {selectedStudent.studentName} doesn't have any learning goals set up yet. 
                     Create their first goal to start tracking their progress and providing targeted support.
                   </p>
-                  <button className="px-8 py-4 bg-gradient-to-r from-pink-500 to-rose-400 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all text-lg">
-                    Create First Goal
-                  </button>
-                  <div className="mt-8 p-6 bg-blue-50 rounded-2xl">
-                    <h4 className="font-semibold text-blue-800 mb-2">Getting Started Tips:</h4>
-                    <ul className="text-blue-700 text-sm space-y-1 text-left">
-                      <li>• Start with 1-2 specific, measurable goals</li>
-                      <li>• Align goals with their IEP objectives</li>
-                      <li>• Include both academic and behavioral targets</li>
-                      <li>• Set realistic timelines for achievement</li>
-                    </ul>
-                  </div>
+                  <button
+    onClick={() => {
+      // build a fresh blank‐goal only when clicked
+      const newGoal = {
+        id: Date.now(),
+       title: "",
+       className:
+          customClasses[selectedClassroom]?.name ||
+          `Classroom ${selectedClassroom}`,
+          startDate: null,
+        description: "",
+        strategies: [],
+        standards: [],
+        colorGradient: "from-pink-500 to-rose-400",
+        icon: Target,
+       studentId: selectedStudent.id,
+      };
+      setSelectedGoal(newGoal);
+      setShowGoalDetail(true);
+    }}
+    className="px-8 py-4 bg-gradient-to-r from-pink-500 to-rose-400 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all text-lg"
+  >
+    Create First Goal
+  </button>
                 </div>
               </div>
             )}
           </div>
         </div>
       )}
+
+{/* ─── Fullscreen Goal Details Modal ─── */}
+{showGoalDetail && selectedGoal && (
+  <div 
+    className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 overflow-auto p-4 md:p-8"
+    onClick={closeGoalDetail} // Close when clicking backdrop
+  >
+    <div 
+      className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
+      onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+    >
+      {/* Header with gradient matching sidebar */}
+      <div className={`bg-gradient-to-r ${selectedGoal.colorGradient || 'from-pink-500 to-orange-500'} p-6`}>
+        <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+    {(() => {
+      const Icon = selectedGoal.icon || Target;
+      return <Icon className="w-5 h-5 text-white" />;
+    })()}
+  </div>
+  <div className="flex-1">
+    {editingGoalField === 'title' 
+      ? <input
+          type="text"
+          value={selectedGoal.title}
+          onChange={e => setSelectedGoal({ ...selectedGoal, title: e.target.value })}
+          onBlur={() => setEditingGoalField(null)}
+          className="w-full text-2xl font-bold text-white bg-white/20 rounded p-1"
+        />
+    : <h2 className="text-2xl font-bold text-white">
+         {selectedGoal.title}
+       </h2>
+   }
+  </div>
+  <button
+    onClick={() => setEditingGoalField('title')}
+    className="p-1 hover:bg-white/20 rounded"
+  >
+    <Edit2 className="w-5 h-5 text-white/80" />
+  </button>
+</div>
+          <button
+            onClick={closeGoalDetail}
+            className="w-8 h-8 hover:bg-white/20 rounded-lg flex items-center justify-center transition-colors duration-200"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
+      </div>
+
+      {/* Body with improved layout */}
+      <div className="p-8 space-y-6">
+        {/* Quick Info Cards - removed pink borders */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+  <div className={`bg-gradient-to-br ${selectedGoal.colorGradient || 'from-pink-500 to-orange-400'} rounded-xl p-4`}>
+    <div className="flex items-center justify-between">
+      <div>
+      <h3 className="font-semibold text-white">Start Date</h3>
+      {editingGoalField === 'startDate' ? (
+  <DatePicker
+    selected={
+      selectedGoal.startDate
+        ? parse(selectedGoal.startDate, 'MMMM d, yyyy', new Date())
+        : null
+    }
+    onChange={date =>
+      setSelectedGoal({
+        ...selectedGoal,
+        startDate: date ? format(date, 'MMMM d, yyyy') : null
+      })
+    }
+    dateFormat="dd/MM/yyyy"
+    placeholderText="DD/MM/YYYY"
+    className="w-full p-1 rounded text-black bg-white/20 focus:bg-white transition"
+    showMonthDropdown
+    showYearDropdown
+    dropdownMode="select"
+  />
+) : (
+  <p className="text-white/90">
+    {selectedGoal.startDate
+      ? format(parse(selectedGoal.startDate, 'MMMM d, yyyy', new Date()), 'dd/MM/yyyy')
+      : 'DD/MM/YYYY'}
+  </p>
+)}
+
+
+      </div>
+      <button
+  onClick={() => setEditingGoalField('startDate')}
+   className="p-1 hover:bg-white/20 rounded"
+ >
+        <Edit2 className="w-5 h-5 text-white/80" />
+      </button>
+    </div>
+  </div>
+
+  <div className={`bg-gradient-to-br ${selectedGoal.colorGradient || 'from-pink-500 to-orange-400'} rounded-xl p-4`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <h3 className="font-semibold text-white">Class Name</h3>
+        {editingGoalField === 'class' ? (
+       <input
+        type="text"
+         value={selectedGoal.class || ''}
+         onChange={e =>
+           setSelectedGoal({
+             ...selectedGoal,
+             class: e.target.value
+           })
+        }
+         onBlur={() => setEditingGoalField(null)}
+         className="w-full p-1 rounded text-black"
+         placeholder="Enter class name"
+       />
+     ) : (
+       <p className="text-white/90">{selectedGoal.class || 'Enter'}</p>
+     )}
+   </div>
+   <button
+     onClick={() => setEditingGoalField('class')}
+     className="p-1 hover:bg-white/20 rounded"
+   >
+     <Edit2 className="w-5 h-5 text-white/80" />
+   </button>
+    </div>
+  </div>
+</div>
+
+{/* Goal Description Section */}
+<div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+  <div className="flex items-center justify-between">
+    <h3 className="text-lg font-semibold text-gray-800">Goal Description</h3>
+    <button
+      onClick={() => setEditingGoalField('description')}
+      className="p-1 hover:bg-gray-100 rounded"
+    >
+      <Edit2 className="w-4 h-4 text-gray-500" />
+    </button>
+  </div>
+
+  {editingGoalField === 'description' ? (
+    <div className="flex flex-col space-y-3">
+      <textarea
+        value={selectedGoal.description}
+        onChange={e =>
+          setSelectedGoal({
+            ...selectedGoal,
+            description: e.target.value
+          })
+        }
+        className="w-full h-32 p-2 border rounded text-black"
+      />
+      <button
+        onClick={() => setEditingGoalField(null)}
+        className="self-end px-4 py-1 bg-green-100 text-green-800 rounded text-sm"
+      >
+        Done
+      </button>
+    </div>
+  ) : (
+    <p className="text-gray-700 leading-relaxed">
+      {selectedGoal.description || 'No description set.'}
+    </p>
+  )}
+</div>
+
+
+        {/* Academic Standards Section */}
+<div className="bg-white rounded-xl border border-gray-200 p-6">
+  <div className="flex items-center justify-between mb-4">
+    <h3 className="text-lg font-semibold text-gray-800">Academic Standards</h3>
+    <button
+      onClick={() => setEditingGoalField('standards')}
+      className="p-1 hover:bg-gray-100 rounded"
+    >
+      <Edit2 className="w-4 h-4 text-gray-500" />
+    </button>
+  </div>
+
+  {editingGoalField === 'standards' ? (
+    <div className="flex flex-col space-y-3">
+      {selectedGoal.standards.map((s, idx) => (
+        <div key={idx} className="flex items-center space-x-2">
+          <input
+            type="text"
+            value={s}
+            onChange={e => {
+              const arr = [...selectedGoal.standards];
+              arr[idx] = e.target.value;
+              setSelectedGoal({ ...selectedGoal, standards: arr });
+            }}
+            className="flex-1 p-2 border rounded"
+          />
+          <button
+            onClick={() => {
+              const arr = selectedGoal.standards.filter((_, i) => i !== idx);
+              setSelectedGoal({ ...selectedGoal, standards: arr });
+            }}
+            className="text-red-500 font-bold"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+
+      {/* Add new standard */}
+      <button
+        onClick={() =>
+          setSelectedGoal(prev => ({
+            ...prev,
+            standards: [...prev.standards, '']
+          }))
+        }
+        className="self-start px-4 py-1 bg-blue-50 rounded text-sm"
+      >
+        + Add Standard
+      </button>
+
+      {/* Done editing */}
+      <button
+        onClick={() => setEditingGoalField(null)}
+        className="self-start px-4 py-1 bg-green-100 text-green-800 rounded text-sm"
+      >
+        Done
+      </button>
+    </div>
+  ) : (
+    <div className="space-y-2">
+      {selectedGoal.standards.map((std, i) => (
+        <div
+          key={i}
+          className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+        >
+          <div
+            className={`w-5 h-5 bg-gradient-to-r ${
+              selectedGoal.colorGradient || 'from-pink-500 to-orange-500'
+            } rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}
+          >
+            <span className="text-white text-xs font-bold">{i + 1}</span>
+          </div>
+          <p className="text-gray-700">{std}</p>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+
+{/* Support Strategies Section */}
+<div className="bg-white rounded-xl border border-gray-200 p-6">
+  <div className="flex items-center justify-between mb-4">
+    <h3 className="text-lg font-semibold text-gray-800">Support Strategies</h3>
+    <button
+      onClick={() => setEditingGoalField('strategies')}
+      className="p-1 hover:bg-gray-100 rounded"
+    >
+      <Edit2 className="w-4 h-4 text-gray-500" />
+    </button>
+  </div>
+
+  {editingGoalField === 'strategies' ? (
+    <div className="flex flex-col space-y-3">
+      {selectedGoal.strategies.map((s, idx) => (
+        <div key={idx} className="flex items-center space-x-2">
+          <input
+            type="text"
+            value={s}
+            onChange={e => {
+              const arr = [...selectedGoal.strategies];
+              arr[idx] = e.target.value;
+              setSelectedGoal({ ...selectedGoal, strategies: arr });
+            }}
+            className="flex-1 p-2 border rounded"
+          />
+          <button
+            onClick={() => {
+              const arr = selectedGoal.strategies.filter((_, i) => i !== idx);
+              setSelectedGoal({ ...selectedGoal, strategies: arr });
+            }}
+            className="text-red-500 font-bold"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+
+      {/* add new strategy */}
+      <button
+        onClick={() =>
+          setSelectedGoal(prev => ({
+            ...prev,
+            strategies: [...prev.strategies, '']
+          }))
+        }
+        className="self-start px-4 py-1 bg-blue-50 rounded text-sm"
+      >
+        + Add Strategy
+      </button>
+
+      {/* done editing */}
+      <button
+        onClick={() => setEditingGoalField(null)}
+        className="self-start px-4 py-1 bg-green-100 text-green-800 rounded text-sm"
+      >
+        Done
+      </button>
+    </div>
+  ) : (
+    <div className="space-y-2">
+      {selectedGoal.strategies.map((strat, i) => (
+        <div
+          key={i}
+          className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+        >
+          <div
+            className={`w-5 h-5 bg-gradient-to-r ${
+              selectedGoal.colorGradient || 'from-orange-500 to-pink-500'
+            } rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}
+          >
+            <span className="text-white text-xs font-bold">{i + 1}</span>
+          </div>
+          <p className="text-gray-700">{strat}</p>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+
+
+        {/* Goal Color Selector - moved to bottom */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <h3 className="text-lg font-semibold text-gray-800">Goal Color</h3>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 md:grid-cols-9 gap-3">
+            {[
+              { name: "Pink Rose", value: "from-pink-500 to-rose-400", preview: "bg-gradient-to-r from-pink-500 to-rose-400" },
+              { name: "Purple Violet", value: "from-violet-500 to-purple-400", preview: "bg-gradient-to-r from-violet-500 to-purple-400" },
+              { name: "Blue Indigo", value: "from-blue-500 to-indigo-400", preview: "bg-gradient-to-r from-blue-500 to-indigo-400" },
+              { name: "Emerald Teal", value: "from-emerald-500 to-teal-400", preview: "bg-gradient-to-r from-emerald-500 to-teal-400" },
+              { name: "Amber Yellow", value: "from-amber-500 to-yellow-400", preview: "bg-gradient-to-r from-amber-500 to-yellow-400" },
+              { name: "Red Rose", value: "from-red-500 to-rose-400", preview: "bg-gradient-to-r from-red-500 to-rose-400" },
+              { name: "Cyan Blue", value: "from-cyan-500 to-blue-400", preview: "bg-gradient-to-r from-cyan-500 to-blue-400" },
+              { name: "Lime Green", value: "from-lime-500 to-green-400", preview: "bg-gradient-to-r from-lime-500 to-green-400" },
+              { name: "Orange Red", value: "from-orange-500 to-red-400", preview: "bg-gradient-to-r from-orange-500 to-red-400" }
+            ].map((color) => (
+              <button
+                key={color.name}
+                onClick={() => handleColorChange(color.value)}
+                className={`
+                  h-12 rounded-lg transition-all duration-200 border-2 relative group
+                  ${selectedGoal.colorGradient === color.value ? 'border-gray-800 scale-105 shadow-lg' : 'border-gray-200 hover:border-gray-400 hover:scale-105'}
+                  ${color.preview}
+                `}
+                title={color.name}
+              >
+                {selectedGoal.colorGradient === color.value && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
+                      <Check className="w-4 h-4 text-gray-800" />
+                    </div>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Goal Icon Selector - moved to last position */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <h3 className="text-lg font-semibold text-gray-800">Goal Icon</h3>
+            </div>
+            <button className="p-1 hover:bg-gray-100 rounded">
+              <Edit2 className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+          <div className="grid grid-cols-8 gap-2">
+            {[
+              { icon: BookOpen },
+              { icon: PenTool },
+              { icon: BarChart2 },
+              { icon: UserCheck },
+              { icon: Clock },
+              { icon: Headphones },
+              { icon: MessageSquare },
+              { icon: Lightbulb },
+              { icon: Calculator },
+              { icon: BookType },
+              { icon: Brain },
+              { icon: Globe },
+              { icon: Palette },
+              { icon: Wrench },
+              { icon: Languages },
+              { icon: Music }
+            ].map(({ icon: Icon }, i) => (
+              <button
+   key={i}
+   onClick={() =>
+     setSelectedGoal(prev => ({ ...prev, icon: Icon }))
+   }
+   className={`
+     aspect-square flex items-center justify-center
+     border-2 rounded-lg transition
+     ${selectedGoal.icon === Icon
+       ? 'border-blue-500'
+       : 'border-gray-200 hover:border-gray-300'}
+   `}
+ >
+                <Icon className="w-7 h-7 text-black" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer with action buttons */}
+      <div className="bg-gray-50 px-8 py-4 border-t border-gray-200">
+        <div className="flex justify-end">
+        <button
+   onClick={handleSaveGoal}
+   className={`px-6 py-2 bg-gradient-to-r ${selectedGoal.colorGradient || 'from-pink-500 to-orange-500'} hover:opacity-90 rounded-lg font-medium text-white transition-all duration-200`} >
+   Save Goal
+ </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Enhanced Modal */}
+{showDocModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setShowDocModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-white/20 animate-in zoom-in duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-400 via-pink-500 to-red-500 shadow-lg shadow-pink-300/50 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-bold text-slate-800 mb-2">
+                Upload PDF Document
+              </h3>
+              <p className="text-slate-600">
+                Select a PDF file to add as supporting documentation
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block">
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleDocUpload}
+                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-50 file:to-purple-50 file:text-blue-700 hover:file:bg-gradient-to-r hover:file:from-blue-100 hover:file:to-purple-100 file:cursor-pointer file:transition-all file:duration-300"
+                  disabled={isUploading}
+                />
+              </label>
+            </div>
+
+            {isUploading && (
+              <div className="mb-6 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="ml-3 text-slate-600">Uploading...</span>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDocModal(false)}
+                className="flex-1 px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-semibold hover:bg-slate-200 transition-colors duration-200"
+                disabled={isUploading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
 
       </div>
        );

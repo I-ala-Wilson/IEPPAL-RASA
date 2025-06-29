@@ -5,101 +5,54 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import ProgressBar from "../components/ProgressBar";
 import { IEPContext } from "../context/IEPContext";
+import { useLocation } from "react-router-dom";
 
+
+// date picker + icons
+import DatePicker from "react-datepicker";
+import { parse, format } from "date-fns";
+import "react-datepicker/dist/react-datepicker.css";
+import { Calculator, Book, Brain, Clock, Plus, Edit3, Trash2, Users, Star, Palette, Languages, Wrench, Music, Globe, BookType,Target, X, BookOpen, Calendar, ClipboardList, Settings, Check, FileText, Edit2, PenTool, BarChart2, UserCheck, Headphones, MessageSquare, Lightbulb, } from "lucide-react";
 export default function GoalForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+const [goalSet, setGoalSet] = useState(false);
+
+useEffect(() => {
+  if (location.state?.goalSet) {
+    setGoalSet(true);
+    // optionally clear it so refresh won’t re-show:
+    // navigate(location.pathname, { replace: true, state: {} });
+  }
+}, [location.state]);
+
   const { iepData, addGoal, finalizeReport } = useContext(IEPContext);
   const { goals, studentInfo } = iepData;
 
-  // ordinal helper
-  const ordinal = (n) => {
-    if (n === 1) return "first";
-    if (n === 2) return "second";
-    if (n === 3) return "third";
-    return `${n}th`;
-  };
+  // State for showing the modal and editing fields
+  const [showGoalDetail, setShowGoalDetail] = useState(true);
+  const [selectedGoal, setSelectedGoal] = useState({
+    id: Date.now(),
+    title: "",
+    class: studentInfo.studentName + "'s Class",
+    startDate: null,
+    description: "",
+    standards: [],
+    strategies: [],
+    colorGradient: "from-pink-500 to-orange-500",
+    icon: Target,
+  });
+  const [editingGoalField, setEditingGoalField] = useState(null);
 
-  const headerText = studentInfo.studentName
-    ? `${studentInfo.studentName}'s ${ordinal(goals.length + 1)} Goal`
-    : `Create ${ordinal(goals.length + 1)} Goal`;
-
-  // form state
-  const [goalOverview, setGoalOverview] = useState("");
-  const [alignedStandard, setAlignedStandard] = useState([]);
-  const [recommendedStrategies, setRecommendedStrategies] = useState([]);
-  const [goalMeasurement, setGoalMeasurement] = useState("");
-
-  // reset on mount
-  useEffect(() => {
-    setGoalOverview("");
-    setAlignedStandard([]);
-    setRecommendedStrategies([]);
-    setGoalMeasurement("");
-  }, []);
-
-  const standards = [
-    "Class A Standard 1",
-    "Class A Standard 2",
-    "Class A Standard 3",
-    "Class B Standard 1",
-    "Class B Standard 2",
-    "Class B Standard 3"
-  ];
-  const strategies = [
-    "Multi-sensory Instruction",
-    "Small Group Instruction",
-    "Visual Learning Aids",
-    "One-on-One Tutoring",
-    "Peer Assisted Learning",
-    "Interactive Whiteboard",
-    "Digital Tools",
-    "Behavioral Intervention",
-    "Routine and Structure",
-    "Regular Feedback"
-  ];
-
-  // progress = 80% + (completedFields/4)*20%
-  let completed = 0;
-  if (goalOverview.trim()) completed++;
-  if (alignedStandard.length) completed++;
-  if (recommendedStrategies.length) completed++;
-  if (goalMeasurement) completed++;
-  const overallProgress = Math.round(80 + (completed / 4) * 20);
-
-  // checkbox handler
-  const handleStrategyChange = (e) => {
-    const val = e.target.value;
-    setRecommendedStrategies(prev =>
-      prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]
-    );
-  };
-
-  // Done = addGoal + finalize + to report
-  const handleDone = (e) => {
-    e.preventDefault();
-    const newGoal = {
-      goalOverview: goalOverview || "N/A",
-      alignedStandard: alignedStandard.length ? alignedStandard : [],
-      recommendedStrategies: recommendedStrategies.length ? recommendedStrategies : [],
-      goalMeasurement: goalMeasurement || "N/A"
-    };
-    addGoal(newGoal);
-    finalizeReport();
-    navigate("/iep-report");
-  };
-
-  // Skip = add a default goal + finalize
-  const handleSkip = () => {
-    const defaultGoal = {
-      goalOverview: "N/A",
-      alignedStandard: [],
-      recommendedStrategies: [],
-      goalMeasurement: "N/A"
-    };
-    addGoal(defaultGoal);
-    finalizeReport();
-    navigate("/iep-report");
-  };
+  // When you Save, push to context + report + navigate
+   const handleSaveGoal = () => {
+       // 1) Add the new goal
+       addGoal(selectedGoal);
+       // 2) (Optional) mark the IEP step complete
+       finalizeReport();
+       // 3) Kick them back to Data Setup
+       navigate("/new-student/data-setup", { state: { goalSet: true } });
+     };
 
   return (
     <div className="flex h-screen font-sans bg-offwhite">
@@ -107,149 +60,430 @@ export default function GoalForm() {
       <div className="flex-1 flex flex-col overflow-auto">
         <Navbar />
 
-        <div className="mt-4 mb-4 max-w-3xl mx-auto">
-          <ProgressBar progress={overallProgress} />
-          <p className="text-sm text-gray-600 mt-1 text-center">
-            Overall Progress: {overallProgress}%
-          </p>
-        </div>
-
-        <div className="pt-8 p-8">
-          <form
-            onSubmit={handleDone}
-            className="w-full max-w-3xl mx-auto bg-white rounded-3xl shadow-lg p-10"
+        {/* ─── Fullscreen Goal Details Modal ─── */}
+        {showGoalDetail && selectedGoal && (
+          <div 
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 overflow-auto p-4 md:p-8"
+            onClick={() => navigate("/new-student/data-setup")}
           >
-            <h2 className="text-3xl font-bold mb-6 text-gray-800">
-              {headerText}
-            </h2>
-
-            {/* Goal Overview */}
-            <div className="mb-6">
-              <label className="block text-lg font-medium text-gray-700">
-                Goal Overview
-              </label>
-              <p className="text-xs text-gray-500 mt-1">
-                Provide a clear, measurable, time-bound SMART goal.
-              </p>
-              <textarea
-                value={goalOverview}
-                onChange={e => setGoalOverview(e.target.value)}
-                className="mt-2 block w-full border border-gray-300 rounded-2xl p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
-                rows="3"
-                placeholder="e.g. Improve reading comprehension by 20%..."
-                required
-              />
-            </div>
-
-            {/* Aligned Standards */}
-            <div className="mb-6">
-              <label className="block text-lg font-medium text-gray-700">
-                Aligned Standards
-              </label>
-              <p className="text-xs text-gray-500 mt-1">
-                (Hold Ctrl/Cmd to select multiple)
-              </p>
-              <select
-                multiple
-                value={alignedStandard}
-                onChange={e =>
-                  setAlignedStandard(
-                    Array.from(e.target.selectedOptions, o => o.value)
-                  )
-                }
-                className="mt-2 block w-full border border-gray-300 rounded-2xl p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
-                required
+            <div 
+              className="max-w-6xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-300 animate-in fade-in slide-in-from-bottom-4"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header with gradient matching sidebar */}
+              <div 
+                className={`bg-gradient-to-r ${selectedGoal.colorGradient || 'from-pink-500 to-orange-500'} p-6`}
               >
-                {standards.map(s => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              {alignedStandard.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {alignedStandard.map((std, i) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1 bg-pink-500 text-white rounded-full text-sm"
-                    >
-                      {std}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Recommended Strategies */}
-            <div className="mb-6">
-              <label className="block text-lg font-medium text-gray-700">
-                Recommended Strategies
-              </label>
-              <p className="text-xs text-gray-500 mt-1">(Select one or more)</p>
-              <div className="flex flex-wrap gap-3 mt-2">
-                {strategies.map(strat => (
-                  <label
-                    key={strat}
-                    className="flex items-center space-x-2 border border-gray-300 rounded-full px-4 py-2 cursor-pointer hover:bg-pink-100 transition-colors"
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                      {(() => {
+                        const Icon = selectedGoal.icon || Target;
+                        return <Icon className="w-5 h-5 text-white" />;
+                      })()}
+                    </div>
+                    <div className="flex-1 flex items-center justify-between space-x-2">
+                      {editingGoalField === 'title' 
+                        ? (
+                          <input
+                            type="text"
+                            value={selectedGoal.title}
+                            onChange={e => setSelectedGoal({ ...selectedGoal, title: e.target.value })}
+                            onBlur={() => setEditingGoalField(null)}
+                            className="flex-1 text-2xl font-bold text-white bg-white/20 rounded p-1"
+                          />
+                        )
+                        : (
+                          <h2
+                            onClick={() => setEditingGoalField('title')}
+                            className="text-2xl font-bold text-white cursor-pointer"
+                          >
+                            {selectedGoal.title || 'Untitled Goal'}
+                          </h2>
+                        )
+                      }
+                      <button
+                        onClick={() => setEditingGoalField('title')}
+                        className="p-1 hover:bg-white/20 rounded"
+                      >
+                        <Edit2 className="w-5 h-5 text-white/80" />
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate("/new-student/data-setup")}
+                    className="w-8 h-8 hover:bg-white/20 rounded-lg flex items-center justify-center transition-colors duration-200"
                   >
-                    <input
-                      type="checkbox"
-                      value={strat}
-                      checked={recommendedStrategies.includes(strat)}
-                      onChange={handleStrategyChange}
-                    />
-                    <span className="text-gray-700">{strat}</span>
-                  </label>
-                ))}
+                    <X className="w-5 h-5 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Body with everything */}
+              <div className="p-8 space-y-6">
+                {/* Quick Info Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Start Date */}
+                  <div className={`bg-gradient-to-br ${selectedGoal.colorGradient} rounded-xl p-4`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-white">Start Date</h3>
+                        {editingGoalField === 'startDate' ? (
+                          <DatePicker
+                            selected={
+                              selectedGoal.startDate
+                                ? parse(selectedGoal.startDate, 'MMMM d, yyyy', new Date())
+                                : null
+                            }
+                            onChange={date =>
+                              setSelectedGoal({
+                                ...selectedGoal,
+                                startDate: date ? format(date, 'MMMM d, yyyy') : null
+                              })
+                            }
+                            dateFormat="dd/MM/yyyy"
+                            placeholderText="DD/MM/YYYY"
+                            className="w-full p-1 rounded text-black bg-white/20 focus:bg-white transition"
+                            showMonthDropdown
+                            showYearDropdown
+                            dropdownMode="select"
+                          />
+                        ) : (
+                          <p className="text-white/90">
+                            {selectedGoal.startDate
+                              ? format(
+                                  parse(selectedGoal.startDate, 'MMMM d, yyyy', new Date()),
+                                  'dd/MM/yyyy'
+                                )
+                              : 'DD/MM/YYYY'}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setEditingGoalField('startDate')}
+                        className="p-1 hover:bg-white/20 rounded"
+                      >
+                        <Edit2 className="w-5 h-5 text-white/80" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Class Name */}
+                  <div className={`bg-gradient-to-br ${selectedGoal.colorGradient} rounded-xl p-4`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-white">Class Name</h3>
+                        {editingGoalField === 'class' ? (
+                          <input
+                            type="text"
+                            value={selectedGoal.class || ''}
+                            onChange={e => setSelectedGoal({ ...selectedGoal, class: e.target.value })}
+                            onBlur={() => setEditingGoalField(null)}
+                            className="w-full p-1 rounded text-black"
+                            placeholder="Enter class name"
+                          />
+                        ) : (
+                          <p className="text-white/90">{selectedGoal.class || 'Enter'}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setEditingGoalField('class')}
+                        className="p-1 hover:bg-white/20 rounded"
+                      >
+                        <Edit2 className="w-5 h-5 text-white/80" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Goal Description Section */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-800">Goal Description</h3>
+                    <button
+                      onClick={() => setEditingGoalField('description')}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <Edit2 className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                  {editingGoalField === 'description' ? (
+                    <div className="flex flex-col space-y-3">
+                      <textarea
+                        value={selectedGoal.description}
+                        onChange={e =>
+                          setSelectedGoal({ ...selectedGoal, description: e.target.value })
+                        }
+                        className="w-full h-32 p-2 border rounded text-black"
+                      />
+                      <button
+                        onClick={() => setEditingGoalField(null)}
+                        className="self-end px-4 py-1 bg-green-100 text-green-800 rounded text-sm"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-gray-700 leading-relaxed">
+                      {selectedGoal.description || 'No description set.'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Academic Standards Section */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Academic Standards</h3>
+                    <button
+                      onClick={() => setEditingGoalField('standards')}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <Edit2 className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                  {editingGoalField === 'standards' ? (
+                    <div className="flex flex-col space-y-3">
+                      {selectedGoal.standards.map((s, idx) => (
+                        <div key={idx} className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={s}
+                            onChange={e => {
+                              const arr = [...selectedGoal.standards];
+                              arr[idx] = e.target.value;
+                              setSelectedGoal({ ...selectedGoal, standards: arr });
+                            }}
+                            className="flex-1 p-2 border rounded"
+                          />
+                          <button
+                            onClick={() =>
+                              setSelectedGoal({
+                                ...selectedGoal,
+                                standards: selectedGoal.standards.filter((_, i) => i !== idx),
+                              })
+                            }
+                            className="text-red-500 font-bold"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() =>
+                          setSelectedGoal({
+                            ...selectedGoal,
+                            standards: [...selectedGoal.standards, ""],
+                          })
+                        }
+                        className="self-start px-4 py-1 bg-blue-50 rounded text-sm"
+                      >
+                        + Add Standard
+                      </button>
+                      <button
+                        onClick={() => setEditingGoalField(null)}
+                        className="self-start px-4 py-1 bg-green-100 text-green-800 rounded text-sm"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedGoal.standards.map((std, i) => (
+                        <div
+                          key={i}
+                          className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div
+                            className={`w-5 h-5 bg-gradient-to-r ${
+                              selectedGoal.colorGradient
+                            } rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}
+                          >
+                            <span className="text-white text-xs font-bold">{i + 1}</span>
+                          </div>
+                          <p className="text-gray-700">{std}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Support Strategies Section */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Support Strategies</h3>
+                    <button
+                      onClick={() => setEditingGoalField('strategies')}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <Edit2 className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                  {editingGoalField === 'strategies' ? (
+                    <div className="flex flex-col space-y-3">
+                      {selectedGoal.strategies.map((s, idx) => (
+                        <div key={idx} className="flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={s}
+                            onChange={e => {
+                              const arr = [...selectedGoal.strategies];
+                              arr[idx] = e.target.value;
+                              setSelectedGoal({ ...selectedGoal, strategies: arr });
+                            }}
+                            className="flex-1 p-2 border rounded"
+                          />
+                          <button
+                            onClick={() =>
+                              setSelectedGoal({
+                                ...selectedGoal,
+                                strategies: selectedGoal.strategies.filter((_, i) => i !== idx),
+                              })
+                            }
+                            className="text-red-500 font-bold"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() =>
+                          setSelectedGoal({
+                            ...selectedGoal,
+                            strategies: [...selectedGoal.strategies, ""],
+                          })
+                        }
+                        className="self-start px-4 py-1 bg-blue-50 rounded text-sm"
+                      >
+                        + Add Strategy
+                      </button>
+                      <button
+                        onClick={() => setEditingGoalField(null)}
+                        className="self-start px-4 py-1 bg-green-100 text-green-800 rounded text-sm"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedGoal.strategies.map((strat, i) => (
+                        <div
+                          key={i}
+                          className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+                        >
+                          <div
+                            className={`w-5 h-5 bg-gradient-to-r ${
+                              selectedGoal.colorGradient
+                            } rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}
+                          >
+                            <span className="text-white text-xs font-bold">{i + 1}</span>
+                          </div>
+                          <p className="text-gray-700">{strat}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Goal Color Selector */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Goal Color</h3>
+                  </div>
+                  <div className="grid grid-cols-3 md:grid-cols-9 gap-3">
+                    {[
+                     { name: "Pink Rose",     value: "from-pink-500 to-rose-400",    preview: "bg-gradient-to-r from-pink-500 to-rose-400" },
+                         { name: "Purple Violet",  value: "from-violet-500 to-purple-400", preview: "bg-gradient-to-r from-violet-500 to-purple-400" },
+                         { name: "Blue Indigo",    value: "from-blue-500 to-indigo-400",   preview: "bg-gradient-to-r from-blue-500 to-indigo-400" },
+                         { name: "Emerald Teal",   value: "from-emerald-500 to-teal-400",  preview: "bg-gradient-to-r from-emerald-500 to-teal-400" },
+                         { name: "Amber Yellow",   value: "from-amber-500 to-yellow-400",  preview: "bg-gradient-to-r from-amber-500 to-yellow-400" },
+                         { name: "Red Rose",       value: "from-red-500 to-rose-400",      preview: "bg-gradient-to-r from-red-500 to-rose-400" },
+                         { name: "Cyan Blue",      value: "from-cyan-500 to-blue-400",     preview: "bg-gradient-to-r from-cyan-500 to-blue-400" },
+                         { name: "Lime Green",     value: "from-lime-500 to-green-400",    preview: "bg-gradient-to-r from-lime-500 to-green-400" },
+                         { name: "Orange Red",     value: "from-orange-500 to-red-400",    preview: "bg-gradient-to-r from-orange-500 to-red-400" }
+                      // … add your other colors …
+                    ].map((color) => (
+                      <button
+                        key={color.name}
+                        onClick={() =>
+                          setSelectedGoal({ ...selectedGoal, colorGradient: color.value })
+                        }
+                        className={`
+                          h-12 rounded-lg transition-all duration-200 border-2 relative group
+                          ${selectedGoal.colorGradient === color.value ? 'border-gray-800 scale-105 shadow-lg' : 'border-gray-200 hover:border-gray-400 hover:scale-105'}
+                          ${color.preview}
+                        `}
+                        title={color.name}
+                      >
+                        {selectedGoal.colorGradient === color.value && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
+                              <Check className="w-4 h-4 text-gray-800" />
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Goal Icon Selector */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Goal Icon</h3>
+                    <button className="p-1 hover:bg-gray-100 rounded">
+                      <Edit2 className="w-4 h-4 text-gray-500" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-8 gap-2">
+                    {[
+
+                          { icon: BookOpen },
+    { icon: PenTool },
+    { icon: BarChart2 },
+    { icon: UserCheck },
+    { icon: Clock },
+    { icon: Headphones },
+    { icon: MessageSquare },
+    { icon: Lightbulb },
+    { icon: Calculator },
+    { icon: BookType },
+    { icon: Brain },
+    { icon: Globe },
+    { icon: Palette },
+    { icon: Wrench },
+    { icon: Languages },
+    { icon: Music }
+                      // … add your other icons …
+                    ].map(({ icon: IconComponent }, i) => (
+                      <button
+                        key={i}
+                        onClick={() =>
+                          setSelectedGoal({ ...selectedGoal, icon: IconComponent })
+                        }
+                        className={`aspect-square flex items-center justify-center border-2 rounded-lg transition ${
+                          selectedGoal.icon === IconComponent ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <IconComponent className="w-7 h-7 text-black" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer with action button */}
+              <div className="bg-gray-50 px-8 py-4 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={handleSaveGoal}
+                  className={`px-6 py-2 bg-gradient-to-r ${selectedGoal.colorGradient} hover:opacity-90 rounded-lg font-medium text-white transition-all duration-200`}
+                >
+                  Save Goal
+                </button>
               </div>
             </div>
-
-            {/* Goal Measurement */}
-            <div className="mb-8">
-              <label className="block text-lg font-medium text-gray-700">
-                Goal Measurement
-              </label>
-              <p className="text-xs text-gray-500 mt-1">
-                (How will you gauge progress?)
-              </p>
-              <select
-                value={goalMeasurement}
-                onChange={e => setGoalMeasurement(e.target.value)}
-                className="mt-2 block w-full border border-gray-300 rounded-2xl p-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-200"
-                required
-              >
-                <option value="">Select Measurement Type</option>
-                <option value="Percentage">Percentage (%)</option>
-                <option value="Frequency">Frequency</option>
-              </select>
-            </div>
-
-            <div className="flex justify-between">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="px-6 py-2 bg-gray-300 rounded-full text-gray-800 hover:scale-105 transition-all duration-300"
-              >
-                Back
-              </button>
-              <div className="flex space-x-4">
-                <button
-                  type="button"
-                  onClick={handleSkip}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-full hover:scale-105 transition-all duration-300"
-                >
-                  Skip Goal
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-full hover:scale-105 transition-all duration-300"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

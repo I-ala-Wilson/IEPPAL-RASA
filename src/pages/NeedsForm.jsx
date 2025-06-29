@@ -192,7 +192,7 @@ export default function NeedsForm() {
             <div className="flex justify-between">
               <button
                 type="button"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/new-student/info")}
                 className="px-6 py-2 bg-gray-300 rounded-full text-gray-800 hover:scale-105 transition-all duration-300"
               >
                 Back
