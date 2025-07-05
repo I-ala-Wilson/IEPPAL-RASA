@@ -22,7 +22,7 @@ export default function DataSetup() {
 
   const { finalizeReport } = useContext(IEPContext);
 
-  const overallProgress = 60;
+  const overallProgress = 100;
 
   const handleDocUpload = async (e) => {
     const file = e.target.files[0];
@@ -147,7 +147,7 @@ export default function DataSetup() {
             <div className="flex justify-between items-center">
               <button
                 type="button"
-                onClick={() => navigate("/new-student/strengths")}
+                onClick={() => navigate("/new-student/info")}
                 className="group px-8 py-4 bg-white/80 backdrop-blur-sm border border-slate-200 rounded-2xl text-slate-700 font-semibold hover:bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex items-center gap-2"
               >
                 <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
